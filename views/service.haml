@@ -9,4 +9,5 @@
   %input{:type => "submit", :value => "Get", :class => "button"}
 
 %div
-  = Pygments.highlight(@output, lexer: 'turtle')
+  =# Pygments.highlight(@output, lexer: 'turtle')
+  =html_escape(@output)

@@ -13,4 +13,5 @@
 %strong Output
 
 %p
-  = Pygments.highlight(@sadi_response, lexer: 'turtle')
+  =# Pygments.highlight(@sadi_response, lexer: 'turtle')
+  =html_escape(@sadi_response)
