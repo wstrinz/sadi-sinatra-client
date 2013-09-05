@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<?xml-stylesheet type="text/xsl" href="?xsl" ?>
+<rdf:RDF
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:mygrid="http://www.mygrid.org.uk/mygrid-moby-service#"
+    xmlns:protege-dc="http://protege.stanford.edu/plugins/owl/dc/protege-dc.owl#"
+    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">
+  <mygrid:serviceDescription rdf:about="http://sadiframework.org/examples/entrezGene2Uniprot">
+    <mygrid:hasOperation>
+      <mygrid:operation>
+        <mygrid:hasUnitTest>
+          <mygrid:unitTest>
+            <mygrid:exampleOutput rdf:resource="http://sadiframework.org/examples/t/entrezGene2Uniprot.output.1.rdf"/>
+            <mygrid:exampleInput rdf:resource="http://sadiframework.org/examples/t/entrezGene2Uniprot.input.1.rdf"/>
+          </mygrid:unitTest>
+        </mygrid:hasUnitTest>
+        <mygrid:outputParameter>
+          <mygrid:parameter>
+            <mygrid:objectType rdf:resource="http://sadiframework.org/examples/entrezGene2Uniprot.owl#OutputClass"/>
+          </mygrid:parameter>
+        </mygrid:outputParameter>
+        <mygrid:inputParameter>
+          <mygrid:parameter>
+            <mygrid:objectType rdf:resource="http://purl.oclc.org/SADI/LSRN/GeneID_Record"/>
+          </mygrid:parameter>
+        </mygrid:inputParameter>
+      </mygrid:operation>
+    </mygrid:hasOperation>
+    <mygrid:providedBy>
+      <mygrid:organisation>
+        <mygrid:authoritative rdf:datatype="http://www.w3.org/2001/XMLSchema#boolean"
+        >false</mygrid:authoritative>
+        <protege-dc:creator rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+        >info@sadiframework.org</protege-dc:creator>
+      </mygrid:organisation>
+    </mygrid:providedBy>
+    <rdfs:comment rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >Maps Entrez Gene IDs to UniProt proteins</rdfs:comment>
+    <mygrid:hasServiceDescriptionText rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >Maps Entrez Gene IDs to UniProt proteins</mygrid:hasServiceDescriptionText>
+    <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >Entrez-Gene-to-UniProt</rdfs:label>
+    <mygrid:hasServiceNameText rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >Entrez-Gene-to-UniProt</mygrid:hasServiceNameText>
+  </mygrid:serviceDescription>
+</rdf:RDF>
