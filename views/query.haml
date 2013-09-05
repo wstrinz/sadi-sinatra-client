@@ -1,0 +1,16 @@
+%div
+  %p SADI Query Tester
+
+%p
+  %a{:href => "service"} View
+
+%form{ action: "", method: "post"}
+  %input{name: "service", :type => "text", value: @service, size: 100}
+  %br
+  %textarea{name: "query", :class => "text", cols: "95", rows: "20"}=@query
+  %input{:type => "submit", :value => "Send", :class => "button"}
+
+%strong Output
+
+%p
+  = Pygments.highlight(@sadi_response, lexer: 'turtle')

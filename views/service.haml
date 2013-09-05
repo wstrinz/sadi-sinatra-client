@@ -1,0 +1,12 @@
+%div
+  %p SADI Turtle Viewer
+
+%p
+  %a{:href => "query"} Query
+
+%form{ action: "", method: "post"}
+  %textarea{name: "service", :class => "text", cols: "80", rows: "1"}=@service
+  %input{:type => "submit", :value => "Get", :class => "button"}
+
+%div
+  = Pygments.highlight(@output, lexer: 'turtle')
