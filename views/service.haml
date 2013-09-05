@@ -8,6 +8,6 @@
   %textarea{name: "service", :class => "text", cols: "80", rows: "1"}=@service
   %input{:type => "submit", :value => "Get", :class => "button"}
 
-%div
+%pre
   =# Pygments.highlight(@output, lexer: 'turtle')
   =html_escape(@output)
