@@ -1,3 +1,5 @@
+source 'https://rubygems.org'
+
 gem 'open-uri'
 gem 'rdf/rdfxml'
 gem 'rdf/turtle'
