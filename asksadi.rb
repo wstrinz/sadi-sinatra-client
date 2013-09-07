@@ -4,6 +4,15 @@ require 'rdf/turtle'
 require 'sinatra'
 require 'rest_client'
 require 'pygments'
+require 'htmlentities'
+require 'cgi'
+require "sinatra/streaming"
+
+helpers Sinatra::Streaming
+
+enable :sessions
+
+# set :server, 'thin'
 
 helpers do
   
@@ -23,8 +32,37 @@ helpers do
     newstr
   end
 
+  def retrieve_async(poll_url)
+    poll_url = poll_url.to_s
+    puts "opening #{poll_url}"
+    sleep(20)
+    puts "really opening #{poll_url}"
+    resp = open(poll_url)
+    # resp = RestClient.get(poll_url)
+    # puts "got #{resp.read}"
+    resp.read
+  end
+
+  # Return poll url or nil
+  def is_async(post_response)
+    gr = RDF::Repository.new
+    RDF::Turtle::Reader.new(post_response) do |reader|
+      reader.each_statement do |statement|
+        gr << statement
+      end
+    end
+
+    rdfs = RDF::Vocabulary.new("http://www.w3.org/2000/01/rdf-schema#")
+
+    polls = RDF::Query.execute(gr) do
+      pattern [:obj, rdfs.isDefinedBy, :def]
+    end
+
+    polls.map(&:def).select{|res| res.to_s["?poll="]}.first
+  end
+
   def post_turtle(service,turtle)
-    RestClient.post(service, turtle, content_type: 'text/rdf+n3', accept: 'text/rdf+n3').gsub('^^<http://www.w3.org/2001/XMLSchema#string>','')
+    response = RestClient.post(service, turtle, content_type: 'text/rdf+n3', accept: 'text/rdf+n3').gsub('^^<http://www.w3.org/2001/XMLSchema#string>','')
   end
 
   def sadi_turtle(service_url="http://sadiframework.org/examples/hello")
@@ -169,13 +207,12 @@ post '/service' do
 end
 
 get '/query' do
-
   if params[:service] && params[:query]
     @service = params[:service]
     @query = params[:query]
-
     # raise "#{@service.first} #{@query}"
-    @sadi_response =post_turtle(@service,@query)
+    # @sadi_response =post_turtle(@service,@query)
+
   else
   @service = "http://sadiframework.org/examples/hello"
   @query = <<-EOF
@@ -186,7 +223,8 @@ get '/query' do
   
   EOF
   end
-
+  
+  @sadi_response = session['response']
 
   haml :query
 end
@@ -194,7 +232,34 @@ end
 post '/query' do
   @service = params[:service]
   @query = params[:query]
-  @sadi_response =post_turtle(@service,@query)
+  @sadi_response = post_turtle(@service,@query)
 
+  poll_url = is_async(@sadi_response)
+  if poll_url
+    session['poll_url'] = poll_url
+    redirect('/stream_async')
+  end   
+  
   haml :query
+end
+
+get '/stream_async' do
+  raise "no poll url given!" unless session['poll_url']
+  poll_url = session['poll_url']
+  stream do |out|
+    out.puts "querying #{poll_url}... <br><br>"
+    service = params[:service]
+    query = params[:query]
+
+    result = retrieve_async(poll_url)
+
+    coder = HTMLEntities.new
+    coded = coder.encode(result).gsub("\n","<br>").gsub("\t","&nbsp;&nbsp;")
+    out.flush
+    out.puts coded
+
+
+
+    
+  end
 end
