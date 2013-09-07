@@ -96,16 +96,16 @@ helpers do
 
     # Load service description
 
-    service_cache_file = service_url.to_s.gsub(%r{/|\.|:},'_') + ".rdfxml"
+    service_cache_file = service_url.to_s.gsub(%r{/|\.|:},'_') + ".ttl"
     unless File.exist?(service_cache_file)
-      open(service_cache_file,'w'){|f| f.write open(service_url).read }
+      open(service_cache_file,'w'){|f| f.write RestClient.get(service_url, accept: 'text/rdf+n3').body }
     end
 
     str = IO.read(service_cache_file)
 
     repo = RDF::Repository.new
 
-    RDF::RDFXML::Reader.new(str) do |reader|
+    RDF::Turtle::Reader.new(str) do |reader|
       reader.each_statement do |statement|
         repo << statement
       end
@@ -151,11 +151,7 @@ helpers do
 
     # Write service turtle
 
-    turtle_string =  RDF::Turtle::Writer.buffer(base_uri: "#{service_url}", :prefixes => turtle_prefixes.merge({service_owl: service_owl + "#"})) do |writer|
-      repo.each_statement do |statement|
-        writer << statement
-      end
-    end
+    turtle_string =  IO.read(service_cache_file)
 
     # Write example files
     if ex_in.size > 0
@@ -176,6 +172,7 @@ helpers do
 #
 # Example Input
 #
+
       EOF
       exin_str +=  RDF::Turtle::Writer.buffer(:prefixes => turtle_prefixes) do |writer|
         exin_repo.each_statement do |statement|
@@ -183,7 +180,7 @@ helpers do
         end
       end
 
-      exin_str = remove_prefixes(exin_str)
+      # exin_str = remove_prefixes(exin_str)
     end
 
   if ex_out.size > 0
@@ -200,9 +197,12 @@ helpers do
     end
 
     exout_str = <<-EOF
+
+
 #
 # Example Output
 #
+
       EOF
     exout_str +=  RDF::Turtle::Writer.buffer(:prefixes => turtle_prefixes) do |writer|
       exout_repo.each_statement do |statement|
@@ -210,7 +210,7 @@ helpers do
       end
     end
 
-    exout_str = remove_prefixes(exout_str)
+    # exout_str = remove_prefixes(exout_str)
 
 
     end
