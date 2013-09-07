@@ -7,12 +7,13 @@ require 'pygments'
 require 'htmlentities'
 require 'cgi'
 require "sinatra/streaming"
+require "sinatra/reloader" if development?
 
 helpers Sinatra::Streaming
 
 enable :sessions
 
-# set :server, 'thin'
+set :server, 'thin'
 
 helpers do
   
@@ -32,15 +33,41 @@ helpers do
     newstr
   end
 
+  def poll(url)
+    resp = RestClient.get(url, accept: 'text/rdf+n3'){ |response, request, result, &block|
+      if [301, 302, 307].include? response.code
+
+        wait = response.headers[:retry_after]
+        
+        if wait
+          return wait.to_i
+        else
+          response.follow_redirection(request, result, &block)
+        end
+
+      else
+        response.return!(request, result, &block)
+      end
+    }
+    resp.body
+  end
+
   def retrieve_async(poll_url)
     poll_url = poll_url.to_s
     puts "opening #{poll_url}"
-    sleep(20)
-    puts "really opening #{poll_url}"
-    resp = open(poll_url)
-    # resp = RestClient.get(poll_url)
-    # puts "got #{resp.read}"
-    resp.read
+    begin
+      loop do
+        result = poll(poll_url)
+        if result.is_a? Fixnum
+          yield "Response not ready, waiting #{result}"
+          sleep(result)
+        else
+          return result
+        end
+      end
+    rescue => details
+      "Request Error: #{details.inspect}\n" + details.backtrace.join("\n")
+    end
   end
 
   # Return poll url or nil
@@ -58,7 +85,7 @@ helpers do
       pattern [:obj, rdfs.isDefinedBy, :def]
     end
 
-    polls.map(&:def).select{|res| res.to_s["?poll="]}.first
+    polls.map(&:def).select{|res| res.to_s["?poll="]}
   end
 
   def post_turtle(service,turtle)
@@ -193,6 +220,7 @@ helpers do
 end
 
 get '/service' do
+  session.clear
   @service = "http://sadiframework.org/examples/hello"
   @output = sadi_turtle(@service)
 
@@ -224,8 +252,6 @@ get '/query' do
   EOF
   end
   
-  @sadi_response = session['response']
-
   haml :query
 end
 
@@ -236,7 +262,7 @@ post '/query' do
 
   poll_url = is_async(@sadi_response)
   if poll_url
-    session['poll_url'] = poll_url
+    session['poll_url'] = poll_url.map(&:to_s)
     redirect('/stream_async')
   end   
   
@@ -245,21 +271,23 @@ end
 
 get '/stream_async' do
   raise "no poll url given!" unless session['poll_url']
-  poll_url = session['poll_url']
+  
+  poll_urls = session['poll_url']
+  puts "#{poll_urls}"
   stream do |out|
-    out.puts "querying #{poll_url}... <br><br>"
-    service = params[:service]
-    query = params[:query]
+    poll_urls.each{|poll_url|
+      out.puts "waiting for #{poll_url}... <br><br>"
 
-    result = retrieve_async(poll_url)
+      coder = HTMLEntities.new
 
-    coder = HTMLEntities.new
-    coded = coder.encode(result).gsub("\n","<br>").gsub("\t","&nbsp;&nbsp;")
-    out.flush
-    out.puts coded
+      result = retrieve_async(poll_url){|msg|
+        out.puts "#{coder.encode(msg)} <br><br>"
+      }
 
-
-
-    
+      coded = coder.encode(result).gsub("\n","<br>").gsub("\t","&nbsp;&nbsp;")
+      out.puts "<pre>" + coded + "</pre>"
+      
+      out.flush    
+    }
   end
 end
